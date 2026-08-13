@@ -13,11 +13,15 @@ import static org.testng.Assert.assertEquals;
 
 public class UsersTest {
 
+    private UserClient userClient;
+
     @BeforeClass
+    public void setUp() {
+        userClient = new UserClient();
+    }
 
     @Test
     public void getUsers() {
-        UserClient userClient = new UserClient();
         userClient.getUsers()
                   .then()
                   .statusCode(200);
@@ -25,7 +29,6 @@ public class UsersTest {
 
     @Test
     public void getUserById() {
-        UserClient userClient = new UserClient();
         Response usersResponse = userClient.getUsers();
         int userId = usersResponse.jsonPath()
                                   .getInt("[0].id");
@@ -39,8 +42,6 @@ public class UsersTest {
 
     @Test
     public void createUser() {
-        UserClient userClient = new UserClient();
-
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
 
         UserResponse userResponse = userClient.createUser(userRequest)
@@ -53,8 +54,6 @@ public class UsersTest {
 
     @Test
     public void createUserWithoutName() {
-        UserClient userClient = new UserClient();
-
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
         userRequest.setName("");
 
@@ -65,8 +64,6 @@ public class UsersTest {
 
     @Test
     public void createUserWithoutEmail() {
-        UserClient userClient = new UserClient();
-
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
         userRequest.setEmail("");
         userClient.createUser(userRequest)
@@ -76,8 +73,6 @@ public class UsersTest {
 
     @Test
     public void createUserWithInvalidEmail() {
-        UserClient userClient = new UserClient();
-
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
         userRequest.setEmail("invalidEmail");
         userClient.createUser(userRequest)
@@ -87,7 +82,6 @@ public class UsersTest {
 
     @Test
     public void createUserWithDuplicateEmail() {
-        UserClient userClient = new UserClient();
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
 
         userClient.createUser(userRequest)
@@ -101,7 +95,6 @@ public class UsersTest {
 
     @Test
     public void updateUser() {
-        UserClient userClient = new UserClient();
         UserRequest createRequest = TestDataGenerator.generateUserRequest();
         Response createResponse = userClient.createUser(createRequest)
                                             .then()
@@ -125,8 +118,6 @@ public class UsersTest {
 
     @Test
     public void deleteUser() {
-        UserClient userClient = new UserClient();
-
         UserRequest request = TestDataGenerator.generateUserRequest();
 
         int userId = userClient.createUser(request)
@@ -143,8 +134,6 @@ public class UsersTest {
 
     @Test
     public void getDeletedUser() {
-        UserClient userClient = new UserClient();
-
         UserRequest request = TestDataGenerator.generateUserRequest();
         int userId = userClient.createUser(request)
                                .then()
@@ -164,8 +153,6 @@ public class UsersTest {
 
     @Test
     public void getNonExistentUser() {
-        UserClient userClient = new UserClient();
-
         int nonExistentId = 1212312121;
 
         userClient.getUser(nonExistentId)
@@ -175,8 +162,6 @@ public class UsersTest {
 
     @Test
     public void updateNonExistentUser() {
-        UserClient userClient = new UserClient();
-
         UserRequest request = TestDataGenerator.generateUserRequest();
 
         userClient.updateUser(1212312121, request)
@@ -186,8 +171,6 @@ public class UsersTest {
 
     @Test
     public void createUserWithoutAuth_() {
-        UserClient userClient = new UserClient();
-
         UserRequest request =
                 TestDataGenerator.generateUserRequest();
 
