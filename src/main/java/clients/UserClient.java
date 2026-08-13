@@ -30,19 +30,11 @@ public class UserClient {
                 .response();
     }
 
-    public UserResponse createUser(UserRequest userRequest) {
-
-        Response response =
-                given(RequestSpec.authenticated())
+    public Response createUser(UserRequest userRequest) {
+        return given(RequestSpec.authenticated())
                         .body(userRequest)
                         .when()
-                        .post("/users")
-                        .then()
-                        .statusCode(201)
-                        .extract()
-                        .response();
-
-        return response.as(UserResponse.class);
+                        .post("/users");
     }
 }
 
