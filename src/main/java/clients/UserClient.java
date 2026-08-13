@@ -36,5 +36,20 @@ public class UserClient {
                         .when()
                         .post("/users");
     }
+
+    public Response updateUser(int userId, UserRequest userRequest) {
+        return given(RequestSpec.authenticated())
+                .pathParam("id", userId)
+                .body(userRequest)
+                .when()
+                .put("/users/{id}", userId);
+    }
+
+    public Response deleteUser(int userId) {
+        return given(RequestSpec.authenticated())
+                .pathParam("id", userId)
+                .when()
+                .delete("/users/{id}");
+    }
 }
 

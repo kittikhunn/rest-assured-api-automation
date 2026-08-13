@@ -4,14 +4,14 @@ import clients.UserClient;
 import io.restassured.response.Response;
 import models.UserRequest;
 import models.UserResponse;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import utils.TestDataGenerator;
-
-import java.util.UUID;
-
 import static org.testng.Assert.assertEquals;
 
 public class UsersTest {
+
+    @BeforeClass
 
     @Test
     public void getUsers() {
@@ -27,7 +27,6 @@ public class UsersTest {
         Response usersResponse = userClient.getUsers();
         int userId = usersResponse.jsonPath()
                                   .getInt("[0].id");
-        System.out.println("User id: " + userId);
         Response userResponse = userClient.getUser(userId);
         assertEquals(userResponse.jsonPath()
                                  .getInt("id"), userId);
@@ -68,7 +67,119 @@ public class UsersTest {
 
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
         userRequest.setEmail("");
-        userClient.createUser(userRequest).then().statusCode(422);
+        userClient.createUser(userRequest)
+                  .then()
+                  .statusCode(422);
+    }
 
+    @Test
+    public void createUserWithInvalidEmail() {
+        UserClient userClient = new UserClient();
+
+        UserRequest userRequest = TestDataGenerator.generateUserRequest();
+        userRequest.setEmail("invalidEmail");
+        userClient.createUser(userRequest)
+                  .then()
+                  .statusCode(422);
+    }
+
+    @Test
+    public void createUserWithDuplicateEmail() {
+        UserClient userClient = new UserClient();
+        UserRequest userRequest = TestDataGenerator.generateUserRequest();
+
+        userClient.createUser(userRequest)
+                  .then()
+                  .statusCode(201);
+
+        userClient.createUser(userRequest)
+                  .then()
+                  .statusCode(422);
+    }
+
+    @Test
+    public void updateUser() {
+        UserClient userClient = new UserClient();
+        UserRequest createRequest = TestDataGenerator.generateUserRequest();
+        Response createResponse = userClient.createUser(createRequest); //gotta verify 201 also
+
+        int useId = createResponse.jsonPath()
+                                  .getInt("id");
+        UserRequest updateRequest = TestDataGenerator.generateUserRequest();
+
+        Response updateResponse = userClient.updateUser(useId, updateRequest);
+
+        models.UserResponse userResponse = updateResponse.then()
+                                                         .statusCode(200)
+                                                         .extract()
+                                                         .as(UserResponse.class);
+
+        System.out.print(userResponse);
+
+        assertEquals(updateRequest.getName(), userResponse.getName());
+        assertEquals(updateRequest.getEmail(), userResponse.getEmail());
+        assertEquals(updateRequest.getGender(), userResponse.getGender());
+        assertEquals(updateRequest.getStatus(), userResponse.getStatus());
+    }
+
+    @Test
+    public void deleteUser() {
+        UserClient userClient = new UserClient();
+
+        UserRequest request = TestDataGenerator.generateUserRequest();
+
+        int userId = userClient.createUser(request)
+                               .then()
+                               .statusCode(201)
+                               .extract()
+                               .jsonPath()
+                               .getInt("id");
+
+        userClient.deleteUser(userId)
+                  .then()
+                  .statusCode(204);
+    }
+
+    @Test
+    public void getDeletedUser() {
+        UserClient userClient = new UserClient();
+
+        UserRequest request = TestDataGenerator.generateUserRequest();
+        int userId = userClient.createUser(request)
+                               .then()
+                               .statusCode(201)
+                               .extract()
+                               .jsonPath()
+                               .getInt("id");
+
+        userClient.deleteUser(userId)
+                  .then()
+                  .statusCode(204);
+
+        userClient.getUser(userId)
+                  .then()
+                  .statusCode(404);
+    }
+
+    @Test
+    public void getNonExistentUser() {
+        UserClient userClient = new UserClient();
+
+        int nonExistentId = 1212312121;
+
+        userClient.getUser(nonExistentId)
+                  .then()
+                  .statusCode(404);
+    }
+
+    @Test
+    public void updateNonExistentUser() {
+        UserClient userClient = new UserClient();
+
+        UserRequest request = TestDataGenerator.generateUserRequest();
+
+        userClient.updateUser(1212312121, request)
+                .then()
+                .statusCode(404);
     }
 }
