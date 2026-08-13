@@ -7,6 +7,7 @@ import models.UserResponse;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import utils.TestDataGenerator;
+
 import static org.testng.Assert.assertEquals;
 
 public class UsersTest {
@@ -27,9 +28,12 @@ public class UsersTest {
         Response usersResponse = userClient.getUsers();
         int userId = usersResponse.jsonPath()
                                   .getInt("[0].id");
-        Response userResponse = userClient.getUser(userId);
-        assertEquals(userResponse.jsonPath()
-                                 .getInt("id"), userId);
+        UserResponse userResponse = userClient.getUser(userId)
+                                          .then()
+                                          .statusCode(200)
+                                          .extract()
+                                          .as(UserResponse.class);
+        assertEquals(userResponse.getId(), userId);
     }
 
     @Test
@@ -179,7 +183,20 @@ public class UsersTest {
         UserRequest request = TestDataGenerator.generateUserRequest();
 
         userClient.updateUser(1212312121, request)
-                .then()
-                .statusCode(404);
+                  .then()
+                  .statusCode(404);
     }
+
+    @Test
+    public void createUserWithoutAuth_() {
+        UserClient userClient = new UserClient();
+
+        UserRequest request =
+                TestDataGenerator.generateUserRequest();
+
+        userClient.createUserWithoutAuth(request)
+                  .then()
+                  .statusCode(401);
+    }
+
 }

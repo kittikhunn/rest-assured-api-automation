@@ -13,21 +13,13 @@ public class UserClient {
         return given(RequestSpec.authenticated())
                 .pathParam("id", userId)
                 .when()
-                .get("/users/{id}")
-                .then()
-                .statusCode(200)
-                .extract()
-                .response();
+                .get("/users/{id}");
     }
 
     public Response getUsers() {
         return given(RequestSpec.authenticated())
                 .when()
-                .get("/users")
-                .then()
-                .statusCode(200)
-                .extract()
-                .response();
+                .get("/users");
     }
 
     public Response createUser(UserRequest userRequest) {
@@ -35,6 +27,13 @@ public class UserClient {
                         .body(userRequest)
                         .when()
                         .post("/users");
+    }
+
+    public Response createUserWithoutAuth(UserRequest userRequest) {
+        return given(RequestSpec.unauthenticated())
+                .body(userRequest)
+                .when()
+                .post("/users");
     }
 
     public Response updateUser(int userId, UserRequest userRequest) {

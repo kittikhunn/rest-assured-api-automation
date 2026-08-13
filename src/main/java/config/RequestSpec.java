@@ -19,4 +19,14 @@ public class RequestSpec {
                 .build();
 
     }
+
+    public static RequestSpecification unauthenticated() {
+
+        return new RequestSpecBuilder()
+                .setBaseUri(Config.BASE_URL)
+                .setContentType(ContentType.JSON)
+                .setAccept(ContentType.JSON)
+                .build();
+
+    }
 }
