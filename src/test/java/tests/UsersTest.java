@@ -6,6 +6,7 @@ import models.UserRequest;
 import models.UserResponse;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import utils.AssertionHelper;
 import utils.TestDataGenerator;
 
 import static org.testng.Assert.assertEquals;
@@ -47,10 +48,7 @@ public class UsersTest {
                                               .statusCode(201)
                                               .extract()
                                               .as(UserResponse.class);
-        assertEquals(userResponse.getName(), userRequest.getName());
-        assertEquals(userResponse.getEmail(), userRequest.getEmail());
-        assertEquals(userResponse.getGender(), userRequest.getGender());
-        assertEquals(userResponse.getStatus(), userRequest.getStatus());
+        AssertionHelper.assertUserMatches(userResponse, userRequest);
     }
 
     @Test
@@ -118,12 +116,7 @@ public class UsersTest {
                                                          .extract()
                                                          .as(UserResponse.class);
 
-        System.out.print(userResponse);
-
-        assertEquals(updateRequest.getName(), userResponse.getName());
-        assertEquals(updateRequest.getEmail(), userResponse.getEmail());
-        assertEquals(updateRequest.getGender(), userResponse.getGender());
-        assertEquals(updateRequest.getStatus(), userResponse.getStatus());
+        AssertionHelper.assertUserMatches(userResponse, updateRequest);
     }
 
     @Test
@@ -198,5 +191,4 @@ public class UsersTest {
                   .then()
                   .statusCode(401);
     }
-
 }
