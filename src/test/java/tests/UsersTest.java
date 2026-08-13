@@ -5,6 +5,7 @@ import io.restassured.response.Response;
 import models.UserRequest;
 import models.UserResponse;
 import org.testng.annotations.Test;
+import utils.TestDataGenerator;
 
 import java.util.UUID;
 
@@ -15,7 +16,9 @@ public class UsersTest {
     @Test
     public void getUsers() {
         UserClient userClient = new UserClient();
-        userClient.getUsers().then().statusCode(200);
+        userClient.getUsers()
+                  .then()
+                  .statusCode(200);
     }
 
     @Test
@@ -34,16 +37,8 @@ public class UsersTest {
     public void createUser() {
         UserClient userClient = new UserClient();
 
-        String uniqueId = UUID.randomUUID()
-                              .toString()
-                              .substring(0, 8);
+        UserRequest userRequest = TestDataGenerator.generateUserRequest();
 
-        UserRequest userRequest = new UserRequest(
-                "Test User " + uniqueId,
-                "test_" + uniqueId + "@example.com",
-                "male",
-                "active"
-        );
         UserResponse userResponse = userClient.createUser(userRequest)
                                               .then()
                                               .statusCode(201)
@@ -58,19 +53,22 @@ public class UsersTest {
     @Test
     public void createUserWithoutName() {
         UserClient userClient = new UserClient();
-        String uniqueId = UUID.randomUUID()
-                              .toString()
-                              .substring(0, 8);
 
-        UserRequest userRequest = new UserRequest(
-                "",
-                "test_" + uniqueId + "@example.com",
-                "male",
-                "active"
-        );
+        UserRequest userRequest = TestDataGenerator.generateUserRequest();
+        userRequest.setName("");
 
+        userClient.createUser(userRequest)
+                  .then()
+                  .statusCode(422);
+    }
+
+    @Test
+    public void createUserWithoutEmail() {
+        UserClient userClient = new UserClient();
+
+        UserRequest userRequest = TestDataGenerator.generateUserRequest();
+        userRequest.setEmail("");
         userClient.createUser(userRequest).then().statusCode(422);
-
 
     }
 }
