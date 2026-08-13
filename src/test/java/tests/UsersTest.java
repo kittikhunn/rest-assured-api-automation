@@ -30,10 +30,10 @@ public class UsersTest {
         int userId = usersResponse.jsonPath()
                                   .getInt("[0].id");
         UserResponse userResponse = userClient.getUser(userId)
-                                          .then()
-                                          .statusCode(200)
-                                          .extract()
-                                          .as(UserResponse.class);
+                                              .then()
+                                              .statusCode(200)
+                                              .extract()
+                                              .as(UserResponse.class);
         assertEquals(userResponse.getId(), userId);
     }
 
@@ -103,7 +103,11 @@ public class UsersTest {
     public void updateUser() {
         UserClient userClient = new UserClient();
         UserRequest createRequest = TestDataGenerator.generateUserRequest();
-        Response createResponse = userClient.createUser(createRequest); //gotta verify 201 also
+        Response createResponse = userClient.createUser(createRequest)
+                                            .then()
+                                            .statusCode(201)
+                                            .extract()
+                                            .response();
 
         int useId = createResponse.jsonPath()
                                   .getInt("id");
