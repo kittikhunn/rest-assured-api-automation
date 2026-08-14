@@ -3,7 +3,6 @@ package clients;
 import config.RequestSpec;
 import io.restassured.response.Response;
 import models.UserRequest;
-import models.UserResponse;
 
 import static io.restassured.RestAssured.given;
 
@@ -41,7 +40,7 @@ public class UserClient {
                 .pathParam("id", userId)
                 .body(userRequest)
                 .when()
-                .put("/users/{id}", userId);
+                .put("/users/{id}");
     }
 
     public Response deleteUser(int userId) {

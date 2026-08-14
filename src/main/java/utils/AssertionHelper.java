@@ -8,8 +8,6 @@ import org.testng.Assert;
 public class AssertionHelper {
 
     public static void assertUserMatches(UserResponse actual, UserRequest expected) {
-//        UserResponse actual = response.as(UserResponse.class);
-
         Assert.assertEquals(actual.getName(), expected.getName());
         Assert.assertEquals(actual.getEmail(), expected.getEmail());
         Assert.assertEquals(actual.getGender(), expected.getGender());

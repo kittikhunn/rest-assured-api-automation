@@ -1,19 +1,25 @@
 package tests;
 
 import clients.UserClient;
+import data.UserDataProvider;
 import io.restassured.response.Response;
 import models.UserRequest;
 import models.UserResponse;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import utils.AssertionHelper;
 import utils.TestDataGenerator;
 
+import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
+
+import static org.hamcrest.Matchers.*;
 import static org.testng.Assert.assertEquals;
 
 public class UsersTest {
 
     private UserClient userClient;
+    private int createdUserId;
 
     @BeforeClass
     public void setUp() {
@@ -22,9 +28,16 @@ public class UsersTest {
 
     @Test
     public void getUsers() {
-        userClient.getUsers()
-                  .then()
-                  .statusCode(200);
+        Response response = userClient.getUsers();
+
+        response.then()
+                .statusCode(200)
+                .body("size()", greaterThan(0))
+                .body("[0].id", notNullValue())
+                .body("[0].name", notNullValue())
+                .body("[0].email", notNullValue())
+                .body("[0].gender", notNullValue())
+                .body("[0].status", notNullValue());
     }
 
     @Test
@@ -35,6 +48,7 @@ public class UsersTest {
         UserResponse userResponse = userClient.getUser(userId)
                                               .then()
                                               .statusCode(200)
+                                              .body(matchesJsonSchemaInClasspath("schemas/user.json"))
                                               .extract()
                                               .as(UserResponse.class);
         assertEquals(userResponse.getId(), userId);
@@ -47,8 +61,12 @@ public class UsersTest {
         UserResponse userResponse = userClient.createUser(userRequest)
                                               .then()
                                               .statusCode(201)
+                                              .body(matchesJsonSchemaInClasspath("schemas/user.json"))
                                               .extract()
                                               .as(UserResponse.class);
+
+        createdUserId = userResponse.getId();
+
         AssertionHelper.assertUserMatches(userResponse, userRequest);
     }
 
@@ -59,16 +77,21 @@ public class UsersTest {
 
         userClient.createUser(userRequest)
                   .then()
-                  .statusCode(422);
+                  .statusCode(422)
+                  .body(matchesJsonSchemaInClasspath("schemas/error.json"))
+                  .body("[0].field", equalTo("name"))
+                  .body("[0].message", equalTo("can't be blank"));
     }
 
     @Test
     public void createUserWithoutEmail() {
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
-        userRequest.setEmail("");
+        userRequest.setEmail(" ");
         userClient.createUser(userRequest)
                   .then()
-                  .statusCode(422);
+                  .statusCode(422)
+                  .body("[0].field", equalTo("email"))
+                  .body("[0].message", equalTo("can't be blank"));
     }
 
     @Test
@@ -77,20 +100,29 @@ public class UsersTest {
         userRequest.setEmail("invalidEmail");
         userClient.createUser(userRequest)
                   .then()
-                  .statusCode(422);
+                  .statusCode(422)
+                  .body(matchesJsonSchemaInClasspath("schemas/error.json"))
+                  .body("[0].field", equalTo("email"))
+                  .body("[0].message", equalTo("is invalid"));
     }
 
     @Test
     public void createUserWithDuplicateEmail() {
         UserRequest userRequest = TestDataGenerator.generateUserRequest();
 
-        userClient.createUser(userRequest)
-                  .then()
-                  .statusCode(201);
+        createdUserId = userClient.createUser(userRequest)
+                                  .then()
+                                  .statusCode(201)
+                                  .extract()
+                                  .jsonPath()
+                                  .getInt("id");
 
         userClient.createUser(userRequest)
                   .then()
-                  .statusCode(422);
+                  .statusCode(422)
+                  .body(matchesJsonSchemaInClasspath("schemas/error.json"))
+                  .body("[0].field", equalTo("email"))
+                  .body("[0].message", equalTo("has already been taken"));
     }
 
     @Test
@@ -102,18 +134,41 @@ public class UsersTest {
                                             .extract()
                                             .response();
 
-        int useId = createResponse.jsonPath()
-                                  .getInt("id");
+        createdUserId = createResponse.jsonPath()
+                                      .getInt("id");
         UserRequest updateRequest = TestDataGenerator.generateUserRequest();
 
-        Response updateResponse = userClient.updateUser(useId, updateRequest);
+        Response updateResponse = userClient.updateUser(createdUserId, updateRequest);
 
-        models.UserResponse userResponse = updateResponse.then()
-                                                         .statusCode(200)
-                                                         .extract()
-                                                         .as(UserResponse.class);
+        UserResponse userResponse = updateResponse.then()
+                                                  .statusCode(200)
+                                                  .body(matchesJsonSchemaInClasspath("schemas/user.json"))
+                                                  .extract()
+                                                  .as(UserResponse.class);
 
         AssertionHelper.assertUserMatches(userResponse, updateRequest);
+    }
+
+    @Test
+    public void updateUserWithoutName() {
+        UserRequest createRequest = TestDataGenerator.generateUserRequest();
+
+        createdUserId = userClient.createUser(createRequest)
+                                  .then()
+                                  .statusCode(201)
+                                  .extract()
+                                  .jsonPath()
+                                  .getInt("id");
+
+        UserRequest updateRequest = TestDataGenerator.generateUserRequest();
+        updateRequest.setName("");
+
+        userClient.updateUser(createdUserId, updateRequest)
+                  .then()
+                  .statusCode(422)
+                  .body(matchesJsonSchemaInClasspath("schemas/error.json"))
+                  .body("[0].field", equalTo("name"))
+                  .body("[0].message", equalTo("can't be blank"));
     }
 
     @Test
@@ -148,16 +203,16 @@ public class UsersTest {
 
         userClient.getUser(userId)
                   .then()
-                  .statusCode(404);
+                  .statusCode(404)
+                  .body("message", equalTo("Resource not found"));
     }
 
-    @Test
-    public void getNonExistentUser() {
-        int nonExistentId = 1212312121;
-
-        userClient.getUser(nonExistentId)
+    @Test(dataProvider = "invalidUserIds", dataProviderClass = UserDataProvider.class)
+    public void getUserWithInvalidId(int userId) {
+        userClient.getUser(userId)
                   .then()
-                  .statusCode(404);
+                  .statusCode(404)
+                  .body("message", equalTo("Resource not found"));
     }
 
     @Test
@@ -166,7 +221,8 @@ public class UsersTest {
 
         userClient.updateUser(1212312121, request)
                   .then()
-                  .statusCode(404);
+                  .statusCode(404)
+                  .body("message", equalTo("Resource not found"));
     }
 
     @Test
@@ -176,6 +232,17 @@ public class UsersTest {
 
         userClient.createUserWithoutAuth(request)
                   .then()
-                  .statusCode(401);
+                  .statusCode(401)
+                  .body("message", equalTo("Authentication failed"));
+    }
+
+    @AfterMethod
+    public void tearDown() {
+        if (createdUserId > 0) {
+            userClient.deleteUser(createdUserId)
+                      .then()
+                      .statusCode(204);
+            createdUserId = 0;
+        }
     }
 }
