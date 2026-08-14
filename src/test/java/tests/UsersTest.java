@@ -26,6 +26,8 @@ public class UsersTest {
         userClient = new UserClient();
     }
 
+    // GET USERS
+
     @Test
     public void getUsers() {
         Response response = userClient.getUsers();
@@ -53,6 +55,16 @@ public class UsersTest {
                                               .as(UserResponse.class);
         assertEquals(userResponse.getId(), userId);
     }
+
+    @Test(dataProvider = "invalidUserIds", dataProviderClass = UserDataProvider.class)
+    public void getUserWithInvalidId(int userId) {
+        userClient.getUser(userId)
+                  .then()
+                  .statusCode(404)
+                  .body("message", equalTo("Resource not found"));
+    }
+
+    // CREATE USER
 
     @Test
     public void createUser() {
@@ -126,6 +138,45 @@ public class UsersTest {
     }
 
     @Test
+    public void createUserWithInvalidGender() {
+        UserRequest userRequest = TestDataGenerator.generateUserRequest();
+        userRequest.setGender("invalid");
+
+        userClient.createUser(userRequest)
+                  .then()
+                  .statusCode(422)
+                  .body(matchesJsonSchemaInClasspath("schemas/error.json"))
+                  .body("[0].field", equalTo("gender"))
+                  .body("[0].message", equalTo("can't be blank, can be male of female"));
+    }
+
+    @Test
+    public void createUserWithInvalidStatus() {
+        UserRequest userRequest = TestDataGenerator.generateUserRequest();
+        userRequest.setStatus("invalid");
+
+        userClient.createUser(userRequest)
+                  .then()
+                  .statusCode(422)
+                  .body(matchesJsonSchemaInClasspath("schemas/error.json"))
+                  .body("[0].field", equalTo("status"))
+                  .body("[0].message", equalTo("can't be blank"));;
+    }
+
+    @Test
+    public void createUserWithoutAuth() {
+        UserRequest request =
+                TestDataGenerator.generateUserRequest();
+
+        userClient.createUserWithoutAuth(request)
+                  .then()
+                  .statusCode(401)
+                  .body("message", equalTo("Authentication failed"));
+    }
+
+    // UPDATE USER
+
+    @Test
     public void updateUser() {
         UserRequest createRequest = TestDataGenerator.generateUserRequest();
         Response createResponse = userClient.createUser(createRequest)
@@ -172,6 +223,37 @@ public class UsersTest {
     }
 
     @Test
+    public void updateNonExistentUser() {
+        UserRequest request = TestDataGenerator.generateUserRequest();
+
+        userClient.updateUser(1212312121, request)
+                  .then()
+                  .statusCode(404)
+                  .body("message", equalTo("Resource not found"));
+    }
+
+    @Test
+    public void updateUserWithoutAuth() {
+        UserRequest createRequest = TestDataGenerator.generateUserRequest();
+
+        createdUserId = userClient.createUser(createRequest)
+                                  .then()
+                                  .statusCode(201)
+                                  .extract()
+                                  .jsonPath()
+                                  .getInt("id");
+
+        UserRequest updateRequest = TestDataGenerator.generateUserRequest();
+
+        userClient.updateUserWithoutAuth(createdUserId, updateRequest)
+                  .then()
+                  .statusCode(404)
+                  .body("message", equalTo("Resource not found"));
+    }
+
+    // DELETE USER
+
+    @Test
     public void deleteUser() {
         UserRequest request = TestDataGenerator.generateUserRequest();
 
@@ -207,33 +289,21 @@ public class UsersTest {
                   .body("message", equalTo("Resource not found"));
     }
 
-    @Test(dataProvider = "invalidUserIds", dataProviderClass = UserDataProvider.class)
-    public void getUserWithInvalidId(int userId) {
-        userClient.getUser(userId)
-                  .then()
-                  .statusCode(404)
-                  .body("message", equalTo("Resource not found"));
-    }
-
     @Test
-    public void updateNonExistentUser() {
+    public void deleteUserWithoutAuth() {
         UserRequest request = TestDataGenerator.generateUserRequest();
 
-        userClient.updateUser(1212312121, request)
+        createdUserId = userClient.createUser(request)
+                                  .then()
+                                  .statusCode(201)
+                                  .extract()
+                                  .jsonPath()
+                                  .getInt("id");
+
+        userClient.deleteUserWithoutAuth(createdUserId)
                   .then()
                   .statusCode(404)
                   .body("message", equalTo("Resource not found"));
-    }
-
-    @Test
-    public void createUserWithoutAuth_() {
-        UserRequest request =
-                TestDataGenerator.generateUserRequest();
-
-        userClient.createUserWithoutAuth(request)
-                  .then()
-                  .statusCode(401)
-                  .body("message", equalTo("Authentication failed"));
     }
 
     @AfterMethod

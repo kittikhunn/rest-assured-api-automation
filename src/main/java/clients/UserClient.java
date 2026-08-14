@@ -43,11 +43,24 @@ public class UserClient {
                 .put("/users/{id}");
     }
 
+    public Response updateUserWithoutAuth(int userId, UserRequest userRequest) {
+        return given()
+                .spec(RequestSpec.unauthenticated())
+                .body(userRequest)
+                .put("/users/{id}", userId);
+    }
+
     public Response deleteUser(int userId) {
         return given(RequestSpec.authenticated())
                 .pathParam("id", userId)
                 .when()
                 .delete("/users/{id}");
+    }
+
+    public Response deleteUserWithoutAuth(int userId) {
+        return given()
+                .spec(RequestSpec.unauthenticated())
+                .delete("/users/{id}", userId);
     }
 }
 
