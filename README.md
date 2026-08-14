@@ -29,9 +29,9 @@ Verify the installations:
     
     GOREST_API_TOKEN=your_token_here
 
-You can use you token as GOREST_API_TOKEN by 
- - create new .env file 
- - use .env.example in my repository and remove .example
+You can set your GoREST token using one of the options below:
+- Create a .env file and add GOREST_API_TOKEN
+- Replace the token in .env.example and rename it to .env
 
 ### Run All Tests
 
@@ -123,7 +123,7 @@ I have a couple of reusable utility classes.
 
 ### JSON Schema
 
-I also added JSON Schema validation for the user response.
+I also added JSON Schema validation for user and error responses.
 
 The schema is stored under:
 
